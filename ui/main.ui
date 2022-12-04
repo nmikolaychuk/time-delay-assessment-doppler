@@ -326,7 +326,7 @@ border: none;</string>
                 <string>Частота дискретизации, Гц</string>
                </property>
                <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                <set>Qt::AlignCenter</set>
                </property>
               </widget>
              </item>
@@ -424,7 +424,7 @@ color: rgb(255, 255, 255);</string>
                 <string>Число информационных бит</string>
                </property>
                <property name="alignment">
-                <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                <set>Qt::AlignCenter</set>
                </property>
               </widget>
              </item>
