@@ -1,7 +1,5 @@
 import random
 import numpy as np
-from collections import deque
-from statsmodels.api import tsa
 
 from defaults import *
 from enums import *

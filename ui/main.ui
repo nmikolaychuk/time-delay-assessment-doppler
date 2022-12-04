@@ -145,14 +145,27 @@ border: none;</string>
              <enum>QFrame::Raised</enum>
             </property>
             <layout class="QHBoxLayout" name="horizontalLayout_3">
-             <item alignment="Qt::AlignTop">
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item alignment="Qt::AlignHCenter|Qt::AlignTop">
               <widget class="QLabel" name="application_name_label">
                <property name="font">
                 <font>
                  <family>Century Gothic</family>
                  <pointsize>12</pointsize>
-                 <weight>50</weight>
-                 <bold>false</bold>
+                 <weight>75</weight>
+                 <bold>true</bold>
                 </font>
                </property>
                <property name="styleSheet">
@@ -164,8 +177,21 @@ border: none;</string>
                <property name="scaledContents">
                 <bool>false</bool>
                </property>
+               <property name="alignment">
+                <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               </property>
                <property name="wordWrap">
                 <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item alignment="Qt::AlignTop">
+              <widget class="QLabel" name="application_icon_label">
+               <property name="text">
+                <string/>
+               </property>
+               <property name="pixmap">
+                <pixmap>../icons/application_icon.png</pixmap>
                </property>
               </widget>
              </item>
@@ -181,16 +207,6 @@ border: none;</string>
                 </size>
                </property>
               </spacer>
-             </item>
-             <item alignment="Qt::AlignTop">
-              <widget class="QLabel" name="application_icon_label">
-               <property name="text">
-                <string/>
-               </property>
-               <property name="pixmap">
-                <pixmap>../icons/application_icon.png</pixmap>
-               </property>
-              </widget>
              </item>
             </layout>
            </widget>
@@ -265,8 +281,8 @@ border: none;</string>
                 <font>
                  <family>Century Gothic</family>
                  <pointsize>10</pointsize>
-                 <weight>50</weight>
-                 <bold>false</bold>
+                 <weight>75</weight>
+                 <bold>true</bold>
                 </font>
                </property>
                <property name="styleSheet">
@@ -991,8 +1007,8 @@ color: rgb(255, 255, 255);</string>
                 <font>
                  <family>Century Gothic</family>
                  <pointsize>10</pointsize>
-                 <weight>50</weight>
-                 <bold>false</bold>
+                 <weight>75</weight>
+                 <bold>true</bold>
                 </font>
                </property>
                <property name="styleSheet">
@@ -1281,7 +1297,7 @@ border: none;</string>
              <string notr="true"/>
             </property>
             <property name="currentIndex">
-             <number>1</number>
+             <number>0</number>
             </property>
             <widget class="QWidget" name="main_page">
              <layout class="QHBoxLayout" name="horizontalLayout_5">
