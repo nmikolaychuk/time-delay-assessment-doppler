@@ -8,8 +8,15 @@ class GraphType(Enum):
     MODULATED = 0
     RESEARCH = 1
     CORRELATION = 2
-    BITS = 3
-    BER_OF_SNR = 4
+    BER_OF_SNR = 3
+
+
+class ComplexPart(Enum):
+    """
+    Компоненты сигнала
+    """
+    REAL = 0
+    IMAGE = 1
 
 
 class SignalType(Enum):

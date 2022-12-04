@@ -71,6 +71,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.signal_freq_edit.textChanged.connect(self.signal_freq_change_logic)
         self.time_delay_edit.textChanged.connect(self.time_delay_change_logic)
         self.snr_edit.textChanged.connect(self.snr_change_logic)
+        self.doppler_edit.textChanged.connect(self.doppler_change_logic)
 
         # Инициализация основных графиков
         self.graphics = MplGraphicsModulated()
@@ -91,12 +92,16 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         if graph_type == GraphType.MODULATED:
             self.graphics.clear_plot_ax1()
             self.graphics.plot_graph_ax1(x, y)
-        elif graph_type == GraphType.RESEARCH:
             self.graphics.clear_plot_ax2()
             self.graphics.plot_graph_ax2(x, y)
-        elif graph_type == GraphType.CORRELATION:
+        elif graph_type == GraphType.RESEARCH:
             self.graphics.clear_plot_ax3()
             self.graphics.plot_graph_ax3(x, y)
+            self.graphics.clear_plot_ax4()
+            self.graphics.plot_graph_ax4(x, y)
+        elif graph_type == GraphType.CORRELATION:
+            self.graphics.clear_plot_ax5()
+            self.graphics.plot_graph_ax5(x, y)
 
         self.graphics.draw()
         self.graphics.flush_events()
@@ -134,21 +139,28 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
             self.signal_generator.modulated_signal = [x, y]
             self.signal_generator.research_signal = [xr, yr]
 
-        # Получение бит для отрисовки
-        bits = self.signal_generator.get_bits_to_plot()
-
         # Вставка маленького сигнала в большой
         research = self.signal_generator.calc_research_signal(self.signal_generator.modulated_signal,
                                                               self.signal_generator.research_signal)
+        # Добавление Допплеровского сдвига
+        research = self.signal_generator.add_doppler(research, float(self.doppler_edit.text()))
         self.signal_generator.research_signal = research
 
         # Добавление шума
-        modulated = self.signal_generator.generate_noise(SignalType.GENERAL,
-                                                         self.signal_generator.modulated_signal)
-        self.signal_generator.modulated_signal = modulated
-        researched = self.signal_generator.generate_noise(SignalType.RESEARCH,
-                                                          self.signal_generator.research_signal)
-        self.signal_generator.research_signal = researched
+        self.signal_generator.modulated_signal = self.signal_generator.get_noise_parts(self.signal_generator.modulated_signal,
+                                                                                       SignalType.GENERAL)
+        self.signal_generator.research_signal = self.signal_generator.get_noise_parts(self.signal_generator.research_signal,
+                                                                                      SignalType.RESEARCH)
+
+        # Отображение эталонного сигнала
+        self.draw(GraphType.MODULATED,
+                  self.signal_generator.modulated_signal[0],
+                  self.signal_generator.modulated_signal[1])
+
+        # Отображение исследуемого сигнала
+        self.draw(GraphType.RESEARCH,
+                  self.signal_generator.research_signal[0],
+                  self.signal_generator.research_signal[1])
 
         # Расчет взаимной корреляционной функции
         correlation = self.signal_generator.get_correlation(self.signal_generator.modulated_signal,
@@ -159,23 +171,10 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         time_delay = self.signal_generator.find_correlation_max(self.signal_generator.correlation_signal)
         self.time_delay_assessment_edit.setText(str(time_delay) + " мс")
 
-        # Отрисовка
-        if self.signal_generator.modulated_signal and \
-            self.signal_generator.research_signal and \
-                self.signal_generator.correlation_signal and bits:
-            # Генерация исследуемого сигнала
-            self.draw(GraphType.MODULATED,
-                      self.signal_generator.modulated_signal[0],
-                      self.signal_generator.modulated_signal[1])
-            self.draw(GraphType.RESEARCH,
-                      self.signal_generator.research_signal[0],
-                      self.signal_generator.research_signal[1])
-            self.draw(GraphType.CORRELATION,
-                      self.signal_generator.correlation_signal[0],
-                      self.signal_generator.correlation_signal[1])
-            self.draw(GraphType.BITS,
-                      bits[0],
-                      bits[1])
+        # Отображение взаимной корреляционной функции
+        self.draw(GraphType.CORRELATION,
+                  self.signal_generator.correlation_signal[0],
+                  self.signal_generator.correlation_signal[1])
 
     def start_research_logic(self):
         """
@@ -231,6 +230,15 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         try:
             self.signal_generator.snr = float(self.snr_edit.text())
+        except ValueError:
+            pass
+
+    def doppler_change_logic(self):
+        """
+        Обработка события изменения значения в поле "Частота Доплера".
+        """
+        try:
+            self.signal_generator.doppler_effect = float(self.doppler_edit.text())
         except ValueError:
             pass
 

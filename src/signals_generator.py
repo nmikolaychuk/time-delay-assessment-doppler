@@ -112,14 +112,14 @@ class SignalGenerator:
             # Модуляция
             if modulation_type == ModulationType.AM:
                 ampl_value = self.low_ampl if bits[bit_index] == 0 else self.high_ampl
-                value = ampl_value * np.cos(w * t)
+                value = complex(ampl_value * np.cos(w * t), 0)
             elif modulation_type == ModulationType.FM:
                 freq = self.low_freq if bits[bit_index] == 0 else self.high_freq
-                value = np.cos(freq * t + self.signal_phase)
+                value = complex(np.cos(freq * t + self.signal_phase), np.sin(freq * t + self.signal_phase))
                 self.signal_phase = freq * t
             elif modulation_type == ModulationType.PM:
                 ph = 0 if bits[bit_index] == 0 else np.pi
-                value = np.cos(w * t + ph)
+                value = complex(np.cos(w * t + ph), np.sin(w * t + ph))
             else:
                 return None, None
 
@@ -127,7 +127,7 @@ class SignalGenerator:
             x.append(t)
             y.append(value)
 
-        return x, y
+        return [x, y]
 
     def calc_research_signal(self, modulated: list, researched: list):
         """
@@ -176,6 +176,51 @@ class SignalGenerator:
             value += random.uniform(-1, 1)
         return value / av
 
+    @staticmethod
+    def get_complex_part(signal: list, part: ComplexPart):
+        """
+        Получение синфазного/квадратурного сигнала.
+        """
+        x = signal[0]
+        y = []
+        if part == ComplexPart.REAL:
+            y = [v.real for v in signal[1]]
+        elif part == ComplexPart.IMAGE:
+            y = [v.imag for v in signal[1]]
+        return [x, y]
+
+    @staticmethod
+    def concat_complex_part(real_part: list, image_part: list):
+        """
+        Получить комплексную огибающую по компонентам.
+        """
+        x = real_part[0]
+        y = []
+        for i in range(len(real_part[1])):
+            y.append(complex(real_part[1][i], image_part[1][i]))
+        return [x, y]
+
+    def get_noise_parts(self, signal: list, signal_type: SignalType):
+        """
+        Наложить шум на комплексную огибающую.
+        """
+        r_part = self.get_complex_part(signal, ComplexPart.REAL)
+        r_part = self.generate_noise(signal_type, r_part)
+        i_part = self.get_complex_part(signal, ComplexPart.IMAGE)
+        i_part = self.generate_noise(signal_type, i_part)
+        return self.concat_complex_part(r_part, i_part)
+
+    def add_doppler(self, signal: list, omega: float):
+        """
+        Добавление допплеровского смещения.
+        """
+        x = signal[0]
+        y = np.array(signal[1])
+        w = 2. * np.pi * omega
+        for t in x:
+            y *= complex(np.cos(w * t), np.sin(w * t))
+        return [x, y]
+
     def generate_noise(self, signal_type: SignalType, signal: list):
         """
         Генерация шума для сигнала
@@ -207,7 +252,7 @@ class SignalGenerator:
         for i in range(len(signal[1])):
             noise_signal.append(signal[1][i] + alpha * noise[i])
 
-        return signal[0], noise_signal
+        return [signal[0], noise_signal]
 
     def get_bits_to_plot(self):
         """
@@ -229,7 +274,7 @@ class SignalGenerator:
                 x.append(i + 1)
                 y.append(self.bits[i])
 
-        return x, y
+        return [x, y]
 
     @staticmethod
     def get_correlation(modulated: list, researched: list):
@@ -241,9 +286,10 @@ class SignalGenerator:
 
         research = np.array(researched[1])
         modulate = np.array(modulated[1])
-        y = np.correlate(research, modulate, 'valid').tolist()
+        y = np.abs(np.correlate(research, modulate, 'valid').tolist())
+        y = y / np.max(y)
         x = researched[0][:len(y)]
-        return x, y
+        return [x, y]
 
     @staticmethod
     def find_correlation_max(correlation: list):
@@ -253,5 +299,5 @@ class SignalGenerator:
         if not correlation:
             return
 
-        max_element_idx = correlation[1].index(max(correlation[1]))
+        max_element_idx = np.argmax(correlation[1])
         return correlation[0][max_element_idx] * 1000
