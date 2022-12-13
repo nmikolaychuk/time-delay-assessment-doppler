@@ -694,94 +694,6 @@ color: rgb(255, 255, 255);</string>
               </spacer>
              </item>
              <item alignment="Qt::AlignHCenter">
-              <widget class="QLabel" name="label_10">
-               <property name="minimumSize">
-                <size>
-                 <width>250</width>
-                 <height>50</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>250</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="font">
-                <font>
-                 <family>Century Gothic</family>
-                 <pointsize>10</pointsize>
-                </font>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">color: rgb(255, 255, 255);</string>
-               </property>
-               <property name="text">
-                <string>Временная задержка в исследуемом канале, бит</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-               <property name="wordWrap">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="verticalSpacer_20">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeType">
-                <enum>QSizePolicy::Fixed</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>5</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item alignment="Qt::AlignHCenter">
-              <widget class="QLineEdit" name="time_delay_bits_edit">
-               <property name="minimumSize">
-                <size>
-                 <width>200</width>
-                 <height>30</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>200</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">border: 1px solid black;
-border-radius: 10px;
-border-color: rgb(255, 255, 255);
-color: rgb(255, 255, 255);</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <spacer name="verticalSpacer_21">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeType">
-                <enum>QSizePolicy::Fixed</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>10</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item alignment="Qt::AlignHCenter">
               <widget class="QLabel" name="label_8">
                <property name="minimumSize">
                 <size>
@@ -863,6 +775,9 @@ color: rgb(255, 255, 255);</string>
                </property>
                <property name="alignment">
                 <set>Qt::AlignCenter</set>
+               </property>
+               <property name="readOnly">
+                <bool>false</bool>
                </property>
               </widget>
              </item>
@@ -1825,7 +1740,7 @@ border-radius: 15px;</string>
      <x>0</x>
      <y>0</y>
      <width>1315</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
   </widget>

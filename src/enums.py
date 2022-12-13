@@ -5,7 +5,7 @@ class GraphType(Enum):
     """
     Типы графиков для отрисовки
     """
-    MODULATED = 0
+    REFERENCE = 0
     RESEARCH = 1
     CORRELATION = 2
     BER_OF_SNR = 3
@@ -23,7 +23,7 @@ class SignalType(Enum):
     """
     Типы сигналов для модуляции
     """
-    GENERAL = 0
+    REFERENCE = 0
     RESEARCH = 1
 
 

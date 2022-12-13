@@ -89,7 +89,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Нарисовать график.
         """
-        if graph_type == GraphType.MODULATED:
+        if graph_type == GraphType.REFERENCE:
             self.graphics.clear_plot_ax1()
             self.graphics.plot_graph_ax1(x, y)
             self.graphics.clear_plot_ax2()
@@ -121,60 +121,73 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Отрисовка графиков на главной странице.
         """
-        # Пересчет параметров
-        self.signal_generator.recalc_parameters()
-        if self.am_manipulation_radio.isChecked():
-            x, y = self.signal_generator.calc_modulated_signal(SignalType.GENERAL, ModulationType.AM)
-            xr, yr = self.signal_generator.calc_modulated_signal(SignalType.RESEARCH, ModulationType.AM)
-            self.signal_generator.modulated_signal = [x, y]
-            self.signal_generator.research_signal = [xr, yr]
-        elif self.mchm_manipulation_radio.isChecked():
-            x, y = self.signal_generator.calc_modulated_signal(SignalType.GENERAL, ModulationType.FM)
-            xr, yr = self.signal_generator.calc_modulated_signal(SignalType.RESEARCH, ModulationType.FM)
-            self.signal_generator.modulated_signal = [x, y]
-            self.signal_generator.research_signal = [xr, yr]
-        elif self.fm2_manipulation_radio.isChecked():
-            x, y = self.signal_generator.calc_modulated_signal(SignalType.GENERAL, ModulationType.PM)
-            xr, yr = self.signal_generator.calc_modulated_signal(SignalType.RESEARCH, ModulationType.PM)
-            self.signal_generator.modulated_signal = [x, y]
-            self.signal_generator.research_signal = [xr, yr]
-
-        # Вставка маленького сигнала в большой
-        research = self.signal_generator.calc_research_signal(self.signal_generator.modulated_signal,
-                                                              self.signal_generator.research_signal)
-        # Добавление Допплеровского сдвига
-        research = self.signal_generator.add_doppler(research, float(self.doppler_edit.text()))
-        self.signal_generator.research_signal = research
-
-        # Добавление шума
-        self.signal_generator.modulated_signal = self.signal_generator.get_noise_parts(self.signal_generator.modulated_signal,
-                                                                                       SignalType.GENERAL)
-        self.signal_generator.research_signal = self.signal_generator.get_noise_parts(self.signal_generator.research_signal,
-                                                                                      SignalType.RESEARCH)
+        # TODO: Расчёт функций
+        self.signal_generator.calculate()
 
         # Отображение эталонного сигнала
-        self.draw(GraphType.MODULATED,
-                  self.signal_generator.modulated_signal[0],
-                  self.signal_generator.modulated_signal[1])
+        self.draw(GraphType.REFERENCE,
+                  self.signal_generator.reference_mod[0],
+                  self.signal_generator.reference_mod[1])
 
         # Отображение исследуемого сигнала
         self.draw(GraphType.RESEARCH,
-                  self.signal_generator.research_signal[0],
-                  self.signal_generator.research_signal[1])
+                  self.signal_generator.research_mod[0],
+                  self.signal_generator.research_mod[1])
 
-        # Расчет взаимной корреляционной функции
-        correlation = self.signal_generator.get_correlation(self.signal_generator.modulated_signal,
-                                                            self.signal_generator.research_signal)
-        self.signal_generator.correlation_signal = correlation
-
-        # Оценка временной задержки
-        time_delay = self.signal_generator.find_correlation_max(self.signal_generator.correlation_signal)
-        self.time_delay_assessment_edit.setText(str(time_delay) + " мс")
-
-        # Отображение взаимной корреляционной функции
-        self.draw(GraphType.CORRELATION,
-                  self.signal_generator.correlation_signal[0],
-                  self.signal_generator.correlation_signal[1])
+        # # Пересчет параметров
+        # self.signal_generator.recalc_parameters()
+        # if self.am_manipulation_radio.isChecked():
+        #     x, y = self.signal_generator.calc_modulated_signal(SignalType.GENERAL, ModulationType.AM)
+        #     xr, yr = self.signal_generator.calc_modulated_signal(SignalType.RESEARCH, ModulationType.AM)
+        #     self.signal_generator.modulated_signal = [x, y]
+        #     self.signal_generator.research_signal = [xr, yr]
+        # elif self.mchm_manipulation_radio.isChecked():
+        #     x, y = self.signal_generator.calc_modulated_signal(SignalType.GENERAL, ModulationType.FM)
+        #     xr, yr = self.signal_generator.calc_modulated_signal(SignalType.RESEARCH, ModulationType.FM)
+        #     self.signal_generator.modulated_signal = [x, y]
+        #     self.signal_generator.research_signal = [xr, yr]
+        # elif self.fm2_manipulation_radio.isChecked():
+        #     x, y = self.signal_generator.calc_modulated_signal(SignalType.GENERAL, ModulationType.PM)
+        #     xr, yr = self.signal_generator.calc_modulated_signal(SignalType.RESEARCH, ModulationType.PM)
+        #     self.signal_generator.modulated_signal = [x, y]
+        #     self.signal_generator.research_signal = [xr, yr]
+        #
+        # # Вставка маленького сигнала в большой
+        # research = self.signal_generator.calc_research_signal(self.signal_generator.modulated_signal,
+        #                                                       self.signal_generator.research_signal)
+        # # Добавление Допплеровского сдвига
+        # research = self.signal_generator.add_doppler(research, float(self.doppler_edit.text()))
+        # self.signal_generator.research_signal = research
+        #
+        # # Добавление шума
+        # self.signal_generator.modulated_signal = self.signal_generator.get_noise_parts(self.signal_generator.modulated_signal,
+        #                                                                                SignalType.GENERAL)
+        # self.signal_generator.research_signal = self.signal_generator.get_noise_parts(self.signal_generator.research_signal,
+        #                                                                               SignalType.RESEARCH)
+        #
+        # # Отображение эталонного сигнала
+        # self.draw(GraphType.MODULATED,
+        #           self.signal_generator.modulated_signal[0],
+        #           self.signal_generator.modulated_signal[1])
+        #
+        # # Отображение исследуемого сигнала
+        # self.draw(GraphType.RESEARCH,
+        #           self.signal_generator.research_signal[0],
+        #           self.signal_generator.research_signal[1])
+        #
+        # # Расчет взаимной корреляционной функции
+        # correlation = self.signal_generator.get_correlation(self.signal_generator.modulated_signal,
+        #                                                     self.signal_generator.research_signal)
+        # self.signal_generator.correlation_signal = correlation
+        #
+        # # Оценка временной задержки
+        # time_delay = self.signal_generator.find_correlation_max(self.signal_generator.correlation_signal)
+        # self.time_delay_assessment_edit.setText(str(time_delay) + " мс")
+        #
+        # # Отображение взаимной корреляционной функции
+        # self.draw(GraphType.CORRELATION,
+        #           self.signal_generator.correlation_signal[0],
+        #           self.signal_generator.correlation_signal[1])
 
     def start_research_logic(self):
         """
@@ -219,7 +232,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def time_delay_change_logic(self):
         """
-        Обработка события изменения значения в поле "Временная задержка".
+        Обработка события изменения значения в поле "Временная задержка, мс".
         """
         if self.time_delay_edit.text().isdigit():
             self.signal_generator.time_delay = float(self.time_delay_edit.text())

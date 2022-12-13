@@ -15,7 +15,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setEnabled(True)
-        MainWindow.resize(1315, 806)
+        MainWindow.resize(1315, 923)
         MainWindow.setMinimumSize(QtCore.QSize(1315, 806))
         MainWindow.setContextMenuPolicy(QtCore.Qt.DefaultContextMenu)
         MainWindow.setStyleSheet("background-color: rgb(240, 240, 240);")
@@ -254,7 +254,7 @@ class Ui_MainWindow(object):
         spacerItem10 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
         self.verticalLayout_7.addItem(spacerItem10)
         self.label_8 = QtWidgets.QLabel(self.buttons_frame)
-        self.label_8.setMinimumSize(QtCore.QSize(248, 50))
+        self.label_8.setMinimumSize(QtCore.QSize(250, 50))
         self.label_8.setMaximumSize(QtCore.QSize(250, 16777215))
         font = QtGui.QFont()
         font.setFamily("Century Gothic")
@@ -283,6 +283,7 @@ class Ui_MainWindow(object):
 "border-color: rgb(255, 255, 255);\n"
 "color: rgb(255, 255, 255);")
         self.time_delay_edit.setAlignment(QtCore.Qt.AlignCenter)
+        self.time_delay_edit.setReadOnly(False)
         self.time_delay_edit.setObjectName("time_delay_edit")
         self.verticalLayout_7.addWidget(self.time_delay_edit, 0, QtCore.Qt.AlignHCenter)
         spacerItem12 = QtWidgets.QSpacerItem(20, 10, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Fixed)
@@ -651,7 +652,7 @@ class Ui_MainWindow(object):
         self.horizontalLayout.addWidget(self.main_container)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1315, 26))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1315, 21))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
 

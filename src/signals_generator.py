@@ -9,8 +9,7 @@ class SignalGenerator:
     """
     Объект для генерации опорного сигнала
     """
-    def __init__(self,
-                 s_r=DEFAULT_SAMPLING_RATE, s_freq=DEFAULT_SIGNAL_FREQ,
+    def __init__(self, s_r=DEFAULT_SAMPLING_RATE, s_freq=DEFAULT_SIGNAL_FREQ,
                  b_count=DEFAULT_BITS_COUNT, bps=DEFAULT_BITS_PER_SECOND,
                  t_delay=DEFAULT_TIME_DELAY, snr=DEFAULT_SNR, e_doppler=DEFAULT_DOPPLER):
 
@@ -19,31 +18,24 @@ class SignalGenerator:
         self.signal_freq = float(s_freq)
         self.bits_count = int(b_count)
         self.bits_per_second = float(bps)
-        self.time_delay = float(t_delay)
+        self.time_delay = int(t_delay)
         self.snr = float(snr)
-        self.signal_phase = 0.
         self.doppler_effect = float(e_doppler)
+        self.signal_phase = 0.
 
-        # Буферы для хранения сигналов
-        self.bits = []
-        self.general_signal = []
-        self.modulated_signal = []
-        self.research_signal = []
-        self.correlation_signal = []
+        # Буферы для хранения информационных бит
+        self.reference_bits = []
+        self.research_bits = []
 
-        # Параметры для АМ
-        # Амплитуда, B
-        self.low_ampl = 1.
-        self.high_ampl = 10.
+        # Буферы для хранения I и Q компонент
+        self.reference_i = []
+        self.reference_q = []
+        self.research_i = []
+        self.research_q = []
 
-        # Расчет параметров
-        # Минимальная и максимальная частота,Гц
-        self.low_freq = 2. * np.pi * self.signal_freq
-        self.high_freq = 4. * np.pi * self.signal_freq
-
-        # Параметры большого сигнала
-        self.rsch_signal_freq = self.signal_freq
-        self.rsch_bits_count = int(self.bits_count * 3)
+        # Буферы для хранения модулированных сигналов
+        self.reference_mod = []
+        self.research_mod = []
 
     @staticmethod
     def _generate_bits(bits_count):
@@ -54,179 +46,130 @@ class SignalGenerator:
         for i in range(int(bits_count)):
             x = random.randint(0, 1)
             bits.append(x)
-
         return bits
 
-    def recalc_parameters(self):
+    @staticmethod
+    def _get_components(bits: list):
         """
-        Пересчет параметров, задаваемых с окна.
+        Получить I и Q компоненты.
         """
-        # Минимальная и максимальная частота,Гц
-        self.low_freq = 2. * np.pi * self.signal_freq
-        self.high_freq = 4. * np.pi * self.signal_freq
+        if len(bits) % 2 != 0:
+            bits.append(0)
 
-        # Параметры большого сигнала
-        self.rsch_signal_freq = self.signal_freq
-        self.rsch_bits_count = int(self.bits_count * 3)
+        i_component = []
+        q_component = []
+        for i in range(len(bits)):
+            if i % 2 == 0:
+                i_component.append(bits[i])
+                i_component.append(bits[i])
+            else:
+                q_component.append(bits[i])
+                q_component.append(bits[i])
+        return i_component, q_component
 
-    def _get_signal_parameters(self, sf: float, bits_count: int):
+    def _generate_info_bits(self):
         """
-        Рассчитать параметры сигналов.
+        Генерация информационных битов для эталонного и исследуемого сигналов.
         """
+        research_bits_count = self.bits_count * 3
+        self.research_bits = self._generate_bits(research_bits_count)
+        self.reference_bits = self._generate_bits(self.bits_count)
+
+    def _get_signal_parameters(self, bits_count):
+        """
+        Рассчитать параметры сигнала.
+        """
+        # Определение типа сигнала
+        signal_type = SignalType.REFERENCE if bits_count == self.bits_count else SignalType.RESEARCH
         # Длительность одного бита
         bit_time = 1. / self.bits_per_second
         # Длительность сигнала
         signal_duration = bit_time * bits_count
         # Частота опорного сигнала
-        w = 2. * np.pi * sf
+        w = 2. * np.pi * self.signal_freq
         # Количество отсчётов сигнала
         n = self.sampling_rate * signal_duration
         # Шаг времени
         timestep = signal_duration / n
-        return signal_duration, timestep, bit_time, w
+        # Заполнение словаря с параметрами
+        params = {"bit_time": bit_time,
+                  "signal_duration": signal_duration,
+                  "freq": w,
+                  "timestep": timestep,
+                  "signal_type": signal_type}
+        return params
 
-    def calc_modulated_signal(self, signal_type: SignalType, modulation_type: ModulationType):
+    def _calc_phase_modulation(self, params: dict):
         """
-        Построить амплитудно-манипулированный сигнал.
+        Построить фазово-манипулированный сигнал.
         """
-        # Характеристики сигнала в зависимости от его типа
-        bits_count = self.bits_count
-        signal_freq = self.signal_freq
-        if signal_type == SignalType.RESEARCH:
-            bits_count = self.rsch_bits_count
-            signal_freq = self.rsch_signal_freq
-
-        # Перегенерация случайных бит
-        bits = self._generate_bits(bits_count)
-
-        # Перегенерация случайных бит
-        if signal_type == SignalType.GENERAL:
-            self.bits = bits
-
         # Получение параметров сигнала
         x, y = [], []
-        signal_duration, timestep, bit_time, w = self._get_signal_parameters(signal_freq, bits_count)
-        for t in np.arange(0, signal_duration, timestep):
+        # Временная задержка, сек
+        td_sec = self.time_delay / 1000
+        # Индекс массива при начале вставки
+        add_idx = int(td_sec / params["bit_time"])
+        for t in np.arange(0, params["signal_duration"], params["timestep"]):
             # Получение текущего бита
-            bit_index = int(t / bit_time)
-            # Модуляция
-            if modulation_type == ModulationType.AM:
-                ampl_value = self.low_ampl if bits[bit_index] == 0 else self.high_ampl
-                value = complex(ampl_value * np.cos(w * t), 0)
-            elif modulation_type == ModulationType.FM:
-                freq = self.low_freq if bits[bit_index] == 0 else self.high_freq
-                value = complex(np.cos(freq * t + self.signal_phase), np.sin(freq * t + self.signal_phase))
-                self.signal_phase = freq * t
-            elif modulation_type == ModulationType.PM:
-                ph = 0 if bits[bit_index] == 0 else np.pi
-                value = complex(np.cos(w * t + ph), np.sin(w * t + ph))
-            else:
-                return None, None
+            bit_index = int(t / params["bit_time"])
+
+            ph_i = 0
+            ph_q = 0
+            if params["signal_type"] == SignalType.REFERENCE:
+                # Обработка фазовой манипуляции
+                ph_i = (3. * np.pi) / 4. if self.reference_i[bit_index] == 0 else (7. * np.pi) / 4.
+                ph_q = (3. * np.pi) / 4. if self.reference_q[bit_index] == 0 else (7. * np.pi) / 4.
+            elif params["signal_type"] == SignalType.RESEARCH:
+                # Вставка эталонного сигнала
+                if t >= td_sec and (bit_index - add_idx) < len(self.reference_i):
+                    # Обработка фазовой манипуляции
+                    ph_i = (3. * np.pi) / 4. if self.reference_i[bit_index - add_idx] == 0 else (7. * np.pi) / 4.
+                    ph_q = (3. * np.pi) / 4. if self.reference_q[bit_index - add_idx] == 0 else (7. * np.pi) / 4.
+                else:
+                    ph_i = (3. * np.pi) / 4. if self.research_i[bit_index] == 0 else (7. * np.pi) / 4.
+                    ph_q = (3. * np.pi) / 4. if self.research_q[bit_index] == 0 else (7. * np.pi) / 4.
 
             # Заполнение списка отсчетов\значений
+            value = complex(np.cos(params["freq"] * t + ph_i), np.cos(params["freq"] * t + ph_q))
+            if params["signal_type"] == SignalType.RESEARCH:
+                # Добавление доплеровского сдвига
+                arg = self.doppler_effect * t * 2. * np.pi
+                value *= complex(np.cos(arg), np.sin(arg))
+
             x.append(t)
             y.append(value)
 
         return [x, y]
 
-    def calc_research_signal(self, modulated: list, researched: list):
+    def calculate(self):
         """
-        Получить исследуемый сигнал, в котором присутствует сдвинутая копия опорного сигнала.
+        Произвести расчёт и получить графики.
         """
-        if not modulated or not researched:
-            return
+        # Генерация информационных битов
+        self._generate_info_bits()
+        # Получение I и Q компонент
+        self.reference_i, self.reference_q = self._get_components(self.reference_bits)
+        self.research_i, self.research_q = self._get_components(self.research_bits)
+        # Модуляция
+        self.reference_mod = self._calc_phase_modulation(self._get_signal_parameters(len(self.reference_i)))
+        self.research_mod = self._calc_phase_modulation(self._get_signal_parameters(len(self.research_i)))
 
-        researched = list(researched)
-
-        # Полученые временной задержки
-        time_delay = self.time_delay / 1000
-        if time_delay > researched[0][-1] - modulated[0][-1]:
-            return
-
-        # Замена участка исследуемого сигнала на манипулированный сигнал
-        idx = 0
-        for i in range(len(researched[0])):
-            if researched[0][i] >= time_delay:
-                idx = i
-                break
-
-        signal_len = len(modulated[0])
-        new_signal = researched[1][:idx] + modulated[1] + researched[1][idx+signal_len:]
-        researched[1] = new_signal
-        return researched
-
-    @staticmethod
-    def _calc_signal_energy(signal: list):
-        """
-        Расчет энергии сигнала
-        """
-        energy = 0.
-        for i in range(len(signal[1])):
-            energy += signal[1][i] ** 2
-        return energy
-
-    @staticmethod
-    def _get_random_value():
-        """
-        Рандомизация чисел для шума
-        """
-        av = 20
-        value = 0.
-        for i in range(av):
-            value += random.uniform(-1, 1)
-        return value / av
-
-    @staticmethod
-    def get_complex_part(signal: list, part: ComplexPart):
-        """
-        Получение синфазного/квадратурного сигнала.
-        """
-        x = signal[0]
-        y = []
-        if part == ComplexPart.REAL:
-            y = [v.real for v in signal[1]]
-        elif part == ComplexPart.IMAGE:
-            y = [v.imag for v in signal[1]]
-        return [x, y]
-
-    @staticmethod
-    def concat_complex_part(real_part: list, image_part: list):
-        """
-        Получить комплексную огибающую по компонентам.
-        """
-        x = real_part[0]
-        y = []
-        for i in range(len(real_part[1])):
-            y.append(complex(real_part[1][i], image_part[1][i]))
-        return [x, y]
-
-    def get_noise_parts(self, signal: list, signal_type: SignalType):
+    def _get_noise_parts(self, signal: list, signal_type: SignalType):
         """
         Наложить шум на комплексную огибающую.
         """
-        r_part = self.get_complex_part(signal, ComplexPart.REAL)
-        r_part = self.generate_noise(signal_type, r_part)
-        i_part = self.get_complex_part(signal, ComplexPart.IMAGE)
-        i_part = self.generate_noise(signal_type, i_part)
-        return self.concat_complex_part(r_part, i_part)
+        r_part = self._get_complex_part(signal, ComplexPart.REAL)
+        r_part = self._generate_noise(signal_type, r_part)
+        i_part = self._get_complex_part(signal, ComplexPart.IMAGE)
+        i_part = self._generate_noise(signal_type, i_part)
+        return self._concat_complex_part(r_part, i_part)
 
-    def add_doppler(self, signal: list, omega: float):
-        """
-        Добавление допплеровского смещения.
-        """
-        x = signal[0]
-        y = np.array(signal[1])
-        w = 2. * np.pi * omega
-        for t in x:
-            y *= complex(np.cos(w * t), np.sin(w * t))
-        return [x, y]
-
-    def generate_noise(self, signal_type: SignalType, signal: list):
+    def _generate_noise(self, signal_type: SignalType, signal: list):
         """
         Генерация шума для сигнала
         """
         snr = None
-        if signal_type == SignalType.GENERAL:
+        if signal_type == SignalType.REFERENCE:
             snr = 10
         elif signal_type == SignalType.RESEARCH:
             snr = self.snr
@@ -254,30 +197,53 @@ class SignalGenerator:
 
         return [signal[0], noise_signal]
 
-    def get_bits_to_plot(self):
+    @staticmethod
+    def _calc_signal_energy(signal: list):
         """
-        Получение информационных бит для отображения.
+        Расчет энергии сигнала
         """
-        if not self.bits:
-            return
+        energy = 0.
+        for i in range(len(signal[1])):
+            energy += signal[1][i] ** 2
+        return energy
 
-        x = []
+    @staticmethod
+    def _get_random_value():
+        """
+        Рандомизация чисел для шума
+        """
+        av = 20
+        value = 0.
+        for i in range(av):
+            value += random.uniform(-1, 1)
+        return value / av
+
+    @staticmethod
+    def _get_complex_part(signal: list, part: ComplexPart):
+        """
+        Получение синфазного/квадратурного сигнала.
+        """
+        x = signal[0]
         y = []
-        for i in range(self.bits_count):
-            x.append(i)
-            y.append(self.bits[i])
-            if i < self.bits_count - 1:
-                if self.bits[i] != self.bits[i + 1]:
-                    x.append(i + 1)
-                    y.append(self.bits[i])
-            else:
-                x.append(i + 1)
-                y.append(self.bits[i])
-
+        if part == ComplexPart.REAL:
+            y = [v.real for v in signal[1]]
+        elif part == ComplexPart.IMAGE:
+            y = [v.imag for v in signal[1]]
         return [x, y]
 
     @staticmethod
-    def get_correlation(modulated: list, researched: list):
+    def _concat_complex_part(real_part: list, image_part: list):
+        """
+        Получить комплексную огибающую по компонентам.
+        """
+        x = real_part[0]
+        y = []
+        for i in range(len(real_part[1])):
+            y.append(complex(real_part[1][i], image_part[1][i]))
+        return [x, y]
+
+    @staticmethod
+    def _get_correlation(modulated: list, researched: list):
         """
         Расчет взаимной корреляционной функции опорного и исследуемого сигналов.
         """
@@ -292,7 +258,7 @@ class SignalGenerator:
         return [x, y]
 
     @staticmethod
-    def find_correlation_max(correlation: list):
+    def _find_correlation_max(correlation: list):
         """
         Нахождение максимума корреляционной функции
         """
