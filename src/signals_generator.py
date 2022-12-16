@@ -22,6 +22,7 @@ class SignalGenerator:
         self.snr = float(snr)
         self.doppler_effect = float(e_doppler)
         self.signal_phase = 0.
+        self.found_time_delay = 0
 
         # Буферы для хранения информационных бит
         self.reference_bits = []
@@ -36,6 +37,9 @@ class SignalGenerator:
         # Буферы для хранения модулированных сигналов
         self.reference_mod = []
         self.research_mod = []
+
+        # Буфер для хранения взаимной корреляционной функции
+        self.correlation = []
 
     @staticmethod
     def _generate_bits(bits_count):
@@ -153,33 +157,34 @@ class SignalGenerator:
         # Модуляция
         self.reference_mod = self._calc_phase_modulation(self._get_signal_parameters(len(self.reference_i)))
         self.research_mod = self._calc_phase_modulation(self._get_signal_parameters(len(self.research_i)))
+        # Добавление шума
+        self.reference_mod = self._get_noise_parts(self.reference_mod)
+        self.research_mod = self._get_noise_parts(self.research_mod)
+        # Корреляция
+        self.correlation = self._get_correlation()
+        # Оценка временной задержки
+        self.found_time_delay = self._find_correlation_max()
 
-    def _get_noise_parts(self, signal: list, signal_type: SignalType):
+    def _get_noise_parts(self, signal: list):
         """
         Наложить шум на комплексную огибающую.
         """
         r_part = self._get_complex_part(signal, ComplexPart.REAL)
-        r_part = self._generate_noise(signal_type, r_part)
+        r_part = self._generate_noise(r_part)
         i_part = self._get_complex_part(signal, ComplexPart.IMAGE)
-        i_part = self._generate_noise(signal_type, i_part)
+        i_part = self._generate_noise(i_part)
         return self._concat_complex_part(r_part, i_part)
 
-    def _generate_noise(self, signal_type: SignalType, signal: list):
+    def _generate_noise(self, signal: list):
         """
         Генерация шума для сигнала
         """
-        snr = None
-        if signal_type == SignalType.REFERENCE:
-            snr = 10
-        elif signal_type == SignalType.RESEARCH:
-            snr = self.snr
-
         if not signal:
             return
 
         # Расчет энергии шума
         signal_energy = self._calc_signal_energy(signal)
-        noise_energy = signal_energy / (10 ** (snr / 10))
+        noise_energy = signal_energy / (10 ** (self.snr / 10))
 
         # Случайная шумовая добавка к каждому отсчету
         noise = []
@@ -242,28 +247,20 @@ class SignalGenerator:
             y.append(complex(real_part[1][i], image_part[1][i]))
         return [x, y]
 
-    @staticmethod
-    def _get_correlation(modulated: list, researched: list):
+    def _get_correlation(self):
         """
         Расчет взаимной корреляционной функции опорного и исследуемого сигналов.
         """
-        if not modulated or not researched:
-            return
-
-        research = np.array(researched[1])
-        modulate = np.array(modulated[1])
+        research = np.array(self.research_mod[1])
+        modulate = np.array(self.reference_mod[1])
         y = np.abs(np.correlate(research, modulate, 'valid').tolist())
         y = y / np.max(y)
-        x = researched[0][:len(y)]
+        x = self.research_mod[0][:len(y)]
         return [x, y]
 
-    @staticmethod
-    def _find_correlation_max(correlation: list):
+    def _find_correlation_max(self):
         """
         Нахождение максимума корреляционной функции
         """
-        if not correlation:
-            return
-
-        max_element_idx = np.argmax(correlation[1])
-        return correlation[0][max_element_idx] * 1000
+        max_element_idx = np.argmax(self.correlation[1])
+        return self.correlation[0][max_element_idx] * 1000
