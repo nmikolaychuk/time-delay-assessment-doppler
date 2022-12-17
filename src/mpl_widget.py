@@ -112,7 +112,7 @@ class MplGraphics3dFunction(FigureCanvas):
         """
         Построение графика функции модулированного сигнала.
         """
-        self.ax.plot_surface(x, y, z, cmap=cm.coolwarm)
+        self.ax.plot_surface(x, y, z, cmap=cm.coolwarm, linewidth=2)
 
     def clear_plot(self):
         """
