@@ -155,19 +155,25 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Отрисовка графиков на главной странице.
         """
-        # Расчёт функций
-        self.signal_generator.calculate()
+        # Определение типа модуляции
+        mod_type = None
+        if self.am_manipulation_radio.isChecked():
+            mod_type = ModulationType.AM
+        elif self.fm2_manipulation_radio.isChecked():
+            mod_type = ModulationType.PM
+        elif self.mchm_manipulation_radio.isChecked():
+            mod_type = ModulationType.FM
 
+        # Расчёт функций
+        self.signal_generator.calculate(mod_type)
         # Отображение эталонного сигнала
         self.draw(GraphType.REFERENCE,
                   self.signal_generator.reference_mod[0],
                   self.signal_generator.reference_mod[1])
-
         # Отображение исследуемого сигнала
         self.draw(GraphType.RESEARCH,
                   self.signal_generator.research_mod[0],
                   self.signal_generator.research_mod[1])
-
         # Отображение корреляционной функции
         self.draw(GraphType.CORRELATION,
                   self.signal_generator.correlation[0],

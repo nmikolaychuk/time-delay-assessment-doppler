@@ -108,11 +108,11 @@ class MplGraphics3dFunction(FigureCanvas):
         self.ax.set_ylabel('doppler, Гц')
         self.ax.view_init(20, -45)
 
-    def plot_graph(self, x: list, y: list, z: list):
+    def plot_graph(self, x, y, z):
         """
         Построение графика функции модулированного сигнала.
         """
-        self.ax.plot_surface(x, y, z, cmap=cm.coolwarm, linewidth=2, antialiased=False)
+        self.ax.plot_surface(x, y, z, cmap=cm.coolwarm)
 
     def clear_plot(self):
         """

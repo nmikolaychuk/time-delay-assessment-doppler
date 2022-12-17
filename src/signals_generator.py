@@ -53,6 +53,13 @@ class SignalGenerator:
         self.found_time_delay_f = 0
         self.found_doppler = 0
 
+        # Параметры АМ
+        self.low_ampl = 1.
+        self.high_ampl = 8.
+
+        # Параметры ФМ
+        self.mod_index = 2
+
     @staticmethod
     def _generate_bits(bits_count):
         """
@@ -115,7 +122,7 @@ class SignalGenerator:
                   "signal_type": signal_type}
         return params
 
-    def _calc_phase_modulation(self, params: dict):
+    def _calc_modulation(self, mod_type: ModulationType, params: dict):
         """
         Построить фазово-манипулированный сигнал.
         """
@@ -128,25 +135,16 @@ class SignalGenerator:
         for t in np.arange(0, params["signal_duration"], params["timestep"]):
             # Получение текущего бита
             bit_index = int(t / params["bit_time"])
+            # Получение отсчета модуляции
+            value = 0
+            if mod_type == ModulationType.PM:
+                value = self._calc_phase_value(params, bit_index, add_idx, t, td_sec)
+            elif mod_type == ModulationType.AM:
+                value = self._calc_ampl_value(params, bit_index, add_idx, t, td_sec)
+            elif mod_type == ModulationType.FM:
+                value = self._calc_freq_value(params, bit_index, add_idx, t, td_sec)
 
-            ph_i = 0
-            ph_q = 0
-            if params["signal_type"] == SignalType.REFERENCE:
-                # Обработка фазовой манипуляции
-                ph_i = (3. * np.pi) / 4. if self.reference_i[bit_index] == 0 else (7. * np.pi) / 4.
-                ph_q = (3. * np.pi) / 4. if self.reference_q[bit_index] == 0 else (7. * np.pi) / 4.
-            elif params["signal_type"] == SignalType.RESEARCH:
-                # Вставка эталонного сигнала
-                if t >= td_sec and (bit_index - add_idx) < len(self.reference_i):
-                    # Обработка фазовой манипуляции
-                    ph_i = (3. * np.pi) / 4. if self.reference_i[bit_index - add_idx] == 0 else (7. * np.pi) / 4.
-                    ph_q = (3. * np.pi) / 4. if self.reference_q[bit_index - add_idx] == 0 else (7. * np.pi) / 4.
-                else:
-                    ph_i = (3. * np.pi) / 4. if self.research_i[bit_index] == 0 else (7. * np.pi) / 4.
-                    ph_q = (3. * np.pi) / 4. if self.research_q[bit_index] == 0 else (7. * np.pi) / 4.
-
-            # Заполнение списка отсчетов\значений
-            value = complex(np.cos(params["freq"] * t + ph_i), np.cos(params["freq"] * t + ph_q))
+            # Добавление эффекта доплера
             if params["signal_type"] == SignalType.RESEARCH:
                 # Добавление доплеровского сдвига
                 arg = self.doppler_effect * t * 2. * np.pi
@@ -157,7 +155,79 @@ class SignalGenerator:
 
         return [x, y]
 
-    def calculate(self):
+    def _calc_freq_value(self, params: dict, bit_index: int, add_idx: int, t: float, td_sec: float):
+        """
+        Сгенерировать временной отсчет амплитудной модуляции.
+        """
+        freq_i = 0
+        freq_q = 0
+        low_freq = self.signal_freq
+        high_freq = self.signal_freq * self.mod_index
+        if params["signal_type"] == SignalType.REFERENCE:
+            # Обработка амплитудной модуляции
+            freq_i = low_freq if self.reference_i[bit_index] == 0 else high_freq
+            freq_q = low_freq if self.reference_q[bit_index] == 0 else high_freq
+        elif params["signal_type"] == SignalType.RESEARCH:
+            # Вставка эталонного сигнала
+            if t >= td_sec and (bit_index - add_idx) < len(self.reference_i):
+                freq_i = low_freq if self.reference_i[bit_index - add_idx] == 0 else high_freq
+                freq_q = low_freq if self.reference_q[bit_index - add_idx] == 0 else high_freq
+            else:
+                freq_i = low_freq if self.research_i[bit_index] == 0 else high_freq
+                freq_q = low_freq if self.research_q[bit_index] == 0 else high_freq
+
+        # Заполнение списка отсчетов\значений
+        value = complex(np.cos(2. * np.pi * freq_i * t), np.cos(2. * np.pi * freq_q * t))
+        return value
+
+    def _calc_ampl_value(self, params: dict, bit_index: int, add_idx: int, t: float, td_sec: float):
+        """
+        Сгенерировать временной отсчет амплитудной модуляции.
+        """
+        ampl_i = 0
+        ampl_q = 0
+        if params["signal_type"] == SignalType.REFERENCE:
+            # Обработка амплитудной модуляции
+            ampl_i = self.low_ampl if self.reference_i[bit_index] == 0 else self.high_ampl
+            ampl_q = self.low_ampl if self.reference_q[bit_index] == 0 else self.high_ampl
+        elif params["signal_type"] == SignalType.RESEARCH:
+            # Вставка эталонного сигнала
+            if t >= td_sec and (bit_index - add_idx) < len(self.reference_i):
+                ampl_i = self.low_ampl if self.reference_i[bit_index - add_idx] == 0 else self.high_ampl
+                ampl_q = self.low_ampl if self.reference_q[bit_index - add_idx] == 0 else self.high_ampl
+            else:
+                ampl_i = self.low_ampl if self.research_i[bit_index] == 0 else self.high_ampl
+                ampl_q = self.low_ampl if self.research_q[bit_index] == 0 else self.high_ampl
+
+        # Заполнение списка отсчетов\значений
+        value = complex(ampl_i * np.cos(params["freq"] * t), ampl_q * np.cos(params["freq"] * t))
+        return value
+
+    def _calc_phase_value(self, params: dict, bit_index: int, add_idx: int, t: float, td_sec: float):
+        """
+        Сгенерировать временной отсчет фазовой модуляции.
+        """
+        ph_i = 0
+        ph_q = 0
+        if params["signal_type"] == SignalType.REFERENCE:
+            # Обработка фазовой манипуляции
+            ph_i = (3. * np.pi) / 4. if self.reference_i[bit_index] == 0 else (7. * np.pi) / 4.
+            ph_q = (3. * np.pi) / 4. if self.reference_q[bit_index] == 0 else (7. * np.pi) / 4.
+        elif params["signal_type"] == SignalType.RESEARCH:
+            # Вставка эталонного сигнала
+            if t >= td_sec and (bit_index - add_idx) < len(self.reference_i):
+                # Обработка фазовой манипуляции
+                ph_i = (3. * np.pi) / 4. if self.reference_i[bit_index - add_idx] == 0 else (7. * np.pi) / 4.
+                ph_q = (3. * np.pi) / 4. if self.reference_q[bit_index - add_idx] == 0 else (7. * np.pi) / 4.
+            else:
+                ph_i = (3. * np.pi) / 4. if self.research_i[bit_index] == 0 else (7. * np.pi) / 4.
+                ph_q = (3. * np.pi) / 4. if self.research_q[bit_index] == 0 else (7. * np.pi) / 4.
+
+        # Заполнение списка отсчетов\значений
+        value = complex(np.cos(params["freq"] * t + ph_i), np.cos(params["freq"] * t + ph_q))
+        return value
+
+    def calculate(self, mod_type: ModulationType):
         """
         Произвести расчёт и получить графики.
         """
@@ -167,8 +237,8 @@ class SignalGenerator:
         self.reference_i, self.reference_q = self._get_components(self.reference_bits)
         self.research_i, self.research_q = self._get_components(self.research_bits)
         # Модуляция
-        self.reference_mod = self._calc_phase_modulation(self._get_signal_parameters(len(self.reference_i)))
-        self.research_mod = self._calc_phase_modulation(self._get_signal_parameters(len(self.research_i)))
+        self.reference_mod = self._calc_modulation(mod_type, self._get_signal_parameters(len(self.reference_i)))
+        self.research_mod = self._calc_modulation(mod_type, self._get_signal_parameters(len(self.research_i)))
         # Добавление шума
         self.reference_mod = self._get_noise_parts(self.reference_mod)
         self.research_mod = self._get_noise_parts(self.research_mod)
