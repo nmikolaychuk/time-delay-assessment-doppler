@@ -8,7 +8,8 @@ class GraphType(Enum):
     REFERENCE = 0
     RESEARCH = 1
     CORRELATION = 2
-    BER_OF_SNR = 3
+    FUNCTION_TAO = 3
+    FUNCTION_DOPPLER = 4
 
 
 class ComplexPart(Enum):

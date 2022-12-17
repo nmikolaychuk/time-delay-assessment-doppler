@@ -1,7 +1,125 @@
 from PyQt5 import QtWidgets
 
+from matplotlib import cm
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+
+
+class MplGraphics2dFunction(FigureCanvas):
+    """
+    Функция отрисовки
+    """
+    def __init__(self, dpi=100):
+        self.fig = Figure(dpi=dpi, facecolor=(.94, .94, .94, 0.), figsize=(4, 3))
+
+        # Добавление области графа
+        self.fig.set_constrained_layout(True)
+        axd = self.fig.subplot_mosaic(
+            """
+            AABB
+            """)
+
+        self.ax1 = axd['A']
+        self.ax2 = axd['B']
+        self.add_text()
+
+        # Инициализация
+        FigureCanvas.__init__(self, self.fig)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Policy.Expanding,
+                                   QtWidgets.QSizePolicy.Policy.Expanding)
+        FigureCanvas.updateGeometry(self)
+
+    def add_text(self):
+        """
+        Инициализация графика.
+
+        :return: None.
+        """
+        self.ax1.grid(linestyle="dotted", alpha=0.65)
+        self.ax1.set_xlabel('tao, сек')
+        self.ax2.grid(linestyle="dotted", alpha=0.65)
+        self.ax2.set_xlabel('doppler, Гц')
+
+    def plot_graph_ax1(self, x_list: list, y_list: list):
+        """
+        Построение временного среза максимумов.
+
+        :param x_list: Список временный отсчётов.
+        :param y_list: Список значений.
+        :return: None.
+        """
+        self.ax1.plot(x_list, y_list, markersize=2, color='r')
+        self.ax1.margins(y=0.8)
+
+    def plot_graph_ax2(self, x_list: list, y_list: list):
+        """
+        Построение частотного среза максимумов.
+
+        :param x_list: Список временный отсчётов.
+        :param y_list: Список значений.
+        :return: None.
+        """
+        self.ax2.plot(x_list, y_list, markersize=2, color='g')
+        self.ax2.margins(y=0.8)
+
+    def clear_plot_ax1(self):
+        """
+        Очистка области графика.
+
+        :return: None.
+        """
+        self.ax1.clear()
+        self.add_text()
+
+    def clear_plot_ax2(self):
+        """
+        Очистка области графика.
+
+        :return: None.
+        """
+        self.ax2.clear()
+        self.add_text()
+
+
+class MplGraphics3dFunction(FigureCanvas):
+    """
+        Функция отрисовки
+    """
+    def __init__(self):
+        plt.rcParams["figure.facecolor"] = (.94, .94, .94, 0.)
+        self.fig, self.ax = plt.subplots(subplot_kw={"projection": "3d", "facecolor": ".9"})
+        self.add_text()
+
+        # Инициализация
+        FigureCanvas.__init__(self, self.fig)
+        FigureCanvas.setSizePolicy(self, QtWidgets.QSizePolicy.Policy.Expanding,
+                                   QtWidgets.QSizePolicy.Policy.Expanding)
+        FigureCanvas.updateGeometry(self)
+
+    def add_text(self):
+        """
+        Инициализация графика.
+        """
+        # Инициализация области графика модулированного сигнала
+        self.ax.set_title("Взаимная функция неопределенности")
+        self.ax.grid(linestyle="dotted", alpha=0.65)
+        self.ax.set_xlabel('tao, сек')
+        self.ax.set_ylabel('doppler, Гц')
+        self.ax.view_init(20, -45)
+
+    def plot_graph(self, x: list, y: list, z: list):
+        """
+        Построение графика функции модулированного сигнала.
+        """
+        self.ax.plot_surface(x, y, z, cmap=cm.coolwarm, linewidth=2, antialiased=False)
+
+    def clear_plot(self):
+        """
+        Очистка области графика.
+        """
+        self.ax.clear()
+        self.add_text()
 
 
 class MplGraphicsResearch(FigureCanvas):

@@ -44,6 +44,15 @@ class SignalGenerator:
         # Буфер для хранения критерия выраженности главного максимума
         self.criterion = 0
 
+        # Буфер для хранения взаимной функции неопределенности
+        self.fn3d = []
+        self.tao_list = []
+        self.doppler_list = []
+        self.fn2d_tao = []
+        self.fn2d_doppler = []
+        self.found_time_delay_f = 0
+        self.found_doppler = 0
+
     @staticmethod
     def _generate_bits(bits_count):
         """
@@ -169,6 +178,9 @@ class SignalGenerator:
         self.found_time_delay = self._find_correlation_max()
         # Вычисление критерия выраженности главного максимума
         self.criterion = self._calc_criterion()
+        # Вычисление взаимной функции неопределенности
+        self.fn3d = self._calc_3d_function()
+        self._calc_2d_function()
 
     def _get_noise_parts(self, signal: list):
         """
@@ -252,13 +264,15 @@ class SignalGenerator:
             y.append(complex(real_part[1][i], image_part[1][i]))
         return [x, y]
 
-    def _get_correlation(self):
+    def _get_correlation(self, is_abs: bool = True):
         """
         Расчет взаимной корреляционной функции опорного и исследуемого сигналов.
         """
         research = np.array(self.research_mod[1])
         modulate = np.array(self.reference_mod[1])
-        y = np.abs(np.correlate(research, modulate, 'valid').tolist())
+        y = np.correlate(research, modulate, 'valid').tolist()
+        if is_abs:
+            y = np.abs(y)
         y = y / np.max(y)
         x = self.research_mod[0][:len(y)]
         return [x, y]
@@ -278,3 +292,46 @@ class SignalGenerator:
         max_value_idx = np.argmax(self.correlation[1])
         # Вычисление среднеквадратичного отклонения
         return self.correlation[1][max_value_idx] / np.std(self.correlation[1])
+
+    def _calc_3d_function(self):
+        """
+        Вычисление взаимной функции неопределенности.
+        """
+        # Вычисление корреляции
+        research = np.array(self.research_mod[1])
+        modulate = np.conj(np.array(self.reference_mod[1]))
+        # Вычисление диапазона времени
+        from_time = 0
+        to_time = self.research_mod[0][-len(self.reference_mod[0])]
+        step_time = self.reference_mod[0][1] - self.reference_mod[0][0]
+        # Значения частоты
+        y = np.fft.fftfreq(modulate.size, d=step_time)
+        # Значения времени, значения функции неопределенности
+        x, z = [], []
+        for t in np.arange(from_time, to_time, step_time):
+            # Вычисление индекса
+            idx = int(t / step_time)
+            # Вычисление корреляции
+            mul = np.multiply(modulate, research[idx:idx+modulate.shape[0]])
+            # Вычисление Фурье
+            fourier = np.fft.fft(mul).tolist()
+            x.append(t)
+            z.append(np.abs(fourier))
+
+        # Сохранение значений на осях
+        self.tao_list = x
+        self.doppler_list = y.tolist()
+        # Преобразование значений на осях к 2d array
+        x, y = np.meshgrid(np.array(x), y)
+        return [x, y, np.stack(z, axis=1)]
+
+    def _calc_2d_function(self):
+        """
+        Вычисление взаимной функции неопределенности.
+        """
+        self.fn2d_tao = [self.tao_list, np.amax(self.fn3d[2], axis=0).tolist()]
+        doppler_y_values = np.amax(self.fn3d[2], axis=1).tolist()
+        doppler_x, doppler_y = zip(*sorted(zip(self.doppler_list, doppler_y_values)))
+        self.fn2d_doppler = [doppler_x, doppler_y]
+        self.found_doppler = doppler_x[np.argmax(doppler_y)]
+        self.found_time_delay_f = self.tao_list[np.argmax(self.fn2d_tao[1])] * 1000

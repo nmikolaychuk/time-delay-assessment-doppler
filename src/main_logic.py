@@ -1,10 +1,12 @@
+import os
+
 from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-from PyQt5 import QtWidgets, QtCore, QtGui
+from PyQt5 import QtCore, QtGui
 
 from main_interface import Ui_MainWindow
-from mpl_widget import MplGraphicsModulated, MplGraphicsResearch
 from signals_generator import SignalGenerator
 from research_logic import calc_research_bad_alg
+from mpl_widget import *
 from enums import *
 from defaults import *
 
@@ -46,6 +48,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.close_button.clicked.connect(lambda: self.close())
         self.open_parameters_page_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.main_page))
         self.open_research_page_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.research_page))
+        self.open_function_page_button.clicked.connect(lambda: self.stacked_widget.setCurrentWidget(self.function_page))
         self.maximized_button.clicked.connect(self.restore_or_maximized)
         self.side_menu_button.clicked.connect(self.slide_left_menu)
         self.draw_button.clicked.connect(self.draw_main_page_graphics)
@@ -85,6 +88,16 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.verticalLayout_10.addWidget(self.research_toolbar)
         self.verticalLayout_10.addWidget(self.research_graphics)
 
+        # Инициализация графиков функции неопределенности
+        self.function_graphics_3d = MplGraphics3dFunction()
+        self.function_toolbar_3d = NavigationToolbar(self.function_graphics_3d, self.function_graphics_3d, coordinates=True)
+        self.verticalLayout_8.addWidget(self.function_toolbar_3d)
+        self.verticalLayout_8.addWidget(self.function_graphics_3d)
+        self.function_graphics_2d = MplGraphics2dFunction()
+        self.function_toolbar_2d = NavigationToolbar(self.function_graphics_2d, self.function_graphics_2d, coordinates=True)
+        self.verticalLayout_12.addWidget(self.function_toolbar_2d)
+        self.verticalLayout_12.addWidget(self.function_graphics_2d)
+
     def draw(self, graph_type: GraphType, x: list, y: list):
         """
         Нарисовать график.
@@ -105,6 +118,29 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.graphics.draw()
         self.graphics.flush_events()
+
+    def draw_function_3d(self, x: list, y: list, z: list):
+        """
+        Отобразить взаимную функцию неопределенности.
+        """
+        self.function_graphics_3d.clear_plot()
+        self.function_graphics_3d.plot_graph(x, y, z)
+        self.function_graphics_3d.draw()
+        self.function_graphics_3d.flush_events()
+
+    def draw_function_2d(self, graph_type: GraphType, x: list, y: list):
+        """
+        Отобразить двумерные графики взаимной функции неопределенности.
+        """
+        if graph_type == GraphType.FUNCTION_TAO:
+            self.function_graphics_2d.clear_plot_ax1()
+            self.function_graphics_2d.plot_graph_ax1(x, y)
+        elif graph_type == GraphType.FUNCTION_DOPPLER:
+            self.function_graphics_2d.clear_plot_ax2()
+            self.function_graphics_2d.plot_graph_ax2(x, y)
+
+        self.function_graphics_2d.draw()
+        self.function_graphics_2d.flush_events()
 
     def draw_criterion_research(self, x: list, y: list):
         """
@@ -139,8 +175,20 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Вывод найденной оценки времени
         self.time_delay_assessment_edit.setText(str(self.signal_generator.found_time_delay))
-        # Вывод критерия
-        print(self.signal_generator.criterion)
+        # Отображение взаимной функции неопределенности
+        self.draw_function_3d(self.signal_generator.fn3d[0],
+                              self.signal_generator.fn3d[1],
+                              self.signal_generator.fn3d[2])
+        self.draw_function_2d(GraphType.FUNCTION_TAO,
+                              self.signal_generator.fn2d_tao[0],
+                              self.signal_generator.fn2d_tao[1])
+        self.draw_function_2d(GraphType.FUNCTION_DOPPLER,
+                              self.signal_generator.fn2d_doppler[0],
+                              self.signal_generator.fn2d_doppler[1])
+        # Печать результатов
+        print("\nКритерий выраженности главного максимума:", self.signal_generator.criterion)
+        print("Временная задержка из функции неопределенности, мс:", self.signal_generator.found_time_delay_f)
+        print("Доплеровская частота из функции неопределенности, Гц:", self.signal_generator.found_doppler)
 
     def start_research_logic(self):
         """
