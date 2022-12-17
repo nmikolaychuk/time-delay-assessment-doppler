@@ -41,6 +41,9 @@ class SignalGenerator:
         # Буфер для хранения взаимной корреляционной функции
         self.correlation = []
 
+        # Буфер для хранения критерия выраженности главного максимума
+        self.criterion = 0
+
     @staticmethod
     def _generate_bits(bits_count):
         """
@@ -164,6 +167,8 @@ class SignalGenerator:
         self.correlation = self._get_correlation()
         # Оценка временной задержки
         self.found_time_delay = self._find_correlation_max()
+        # Вычисление критерия выраженности главного максимума
+        self.criterion = self._calc_criterion()
 
     def _get_noise_parts(self, signal: list):
         """
@@ -260,7 +265,16 @@ class SignalGenerator:
 
     def _find_correlation_max(self):
         """
-        Нахождение максимума корреляционной функции
+        Нахождение максимума корреляционной функции.
         """
         max_element_idx = np.argmax(self.correlation[1])
         return self.correlation[0][max_element_idx] * 1000
+
+    def _calc_criterion(self):
+        """
+        Нахождение критерия выраженности главного максимума.
+        """
+        # Нахождение значения главного максимума
+        max_value_idx = np.argmax(self.correlation[1])
+        # Вычисление среднеквадратичного отклонения
+        return self.correlation[1][max_value_idx] / np.std(self.correlation[1])

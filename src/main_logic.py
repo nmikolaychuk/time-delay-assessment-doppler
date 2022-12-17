@@ -4,7 +4,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui
 from main_interface import Ui_MainWindow
 from mpl_widget import MplGraphicsModulated, MplGraphicsResearch
 from signals_generator import SignalGenerator
-from research_logic import calc_research
+from research_logic import calc_research_bad_alg
 from enums import *
 from defaults import *
 
@@ -106,14 +106,12 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         self.graphics.draw()
         self.graphics.flush_events()
 
-    def draw_ber_of_snr(self, x_am: list, y_am: list, err_am: list,
-                        x_fm: list, y_fm: list, err_fm: list,
-                        x_pm: list, y_pm: list, err_pm: list):
+    def draw_criterion_research(self, x: list, y: list):
         """
         Отобразить график исследования.
         """
         self.research_graphics.clear_plot()
-        self.research_graphics.plot_graph(x_am, y_am, err_am, x_fm, y_fm, err_fm, x_pm, y_pm, err_pm)
+        self.research_graphics.plot_graph(x, y)
         self.research_graphics.draw()
         self.research_graphics.flush_events()
 
@@ -121,7 +119,7 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         Отрисовка графиков на главной странице.
         """
-        # TODO: Расчёт функций
+        # Расчёт функций
         self.signal_generator.calculate()
 
         # Отображение эталонного сигнала
@@ -141,6 +139,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Вывод найденной оценки времени
         self.time_delay_assessment_edit.setText(str(self.signal_generator.found_time_delay))
+        # Вывод критерия
+        print(self.signal_generator.criterion)
 
     def start_research_logic(self):
         """
@@ -152,8 +152,8 @@ class MainApp(QtWidgets.QMainWindow, Ui_MainWindow):
         except ValueError:
             return
 
-        x_am, y_am, err_am, x_fm, y_fm, err_fm, x_pm, y_pm, err_pm = calc_research(average_count, self.signal_generator)
-        self.draw_ber_of_snr(x_am, y_am, err_am, x_fm, y_fm, err_fm, x_pm, y_pm, err_pm)
+        x, y = calc_research_bad_alg(average_count, self.signal_generator)
+        self.draw_criterion_research(x, y)
 
     def sr_change_logic(self):
         """

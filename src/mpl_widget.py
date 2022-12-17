@@ -26,23 +26,14 @@ class MplGraphicsResearch(FigureCanvas):
         Инициализация графика.
         """
         # Инициализация области графика модулированного сигнала
-        self.ax.set_title("График зависимости BER от SNR")
+        self.ax.set_title("График устойчивости алгоритма в зависимости от доплеровского смещения")
         self.ax.grid(linestyle="dotted", alpha=0.65)
 
-    def plot_graph(self, x_am: list, y_am: list, errors_am: list,
-                   x_fm: list, y_fm: list, errors_fm: list,
-                   x_pm: list, y_pm: list, errors_pm: list):
+    def plot_graph(self, x: list, y: list):
         """
         Построение графика функции модулированного сигнала.
         """
-        self.ax.errorbar(x_am, y_am, yerr=errors_am, fmt='o', linestyle='-', markersize=3, elinewidth=0.5,
-                         ecolor='black', color='r', label="АМ", capsize=2, capthick=0.5)
-        self.ax.errorbar(x_fm, y_fm, yerr=errors_fm, fmt='o', linestyle='-', markersize=3, elinewidth=0.5,
-                         ecolor='black', color='g', label="ЧМ", capsize=2, capthick=0.5)
-        self.ax.errorbar(x_pm, y_pm, yerr=errors_pm, fmt='o', linestyle='-', markersize=3, elinewidth=0.5,
-                         ecolor='black', color='b', label="ФМ", capsize=2, capthick=0.5)
-
-        self.ax.legend(loc="lower right", framealpha=1.0)
+        self.ax.plot(x, y, linestyle="-", markersize=2, color='r')
 
     def clear_plot(self):
         """
