@@ -1,6 +1,9 @@
 import numpy as np
 
 from signals_generator import SignalGenerator
+from enums import ModulationType
+
+MOD_TYPE = ModulationType.FM
 
 
 def calc_research_bad_alg(average_count: int, signal_generator: SignalGenerator,
@@ -20,7 +23,7 @@ def calc_research_bad_alg(average_count: int, signal_generator: SignalGenerator,
         # Цикл для усреднений
         for avg in range(average_count):
             # Вычисление задержки
-            signal_generator.calculate()
+            signal_generator.calculate(MOD_TYPE)
             avg_criterion += signal_generator.criterion
         # Усредненный критерий
         avg_criterion /= average_count
